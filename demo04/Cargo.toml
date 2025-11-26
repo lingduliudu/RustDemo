@@ -1,0 +1,10 @@
+[package]
+name = "tot_utils"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "tot_utils"
+crate-type = ["cdylib"]
+
+[dependencies]
