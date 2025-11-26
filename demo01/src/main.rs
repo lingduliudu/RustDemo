@@ -1,7 +1,5 @@
-use std::ptr::addr_of_mut;
-
+use actix_cors::Cors;
 use actix_web::{App, HttpServer};
-
 use log::info;
 mod api;
 use api::*;
@@ -28,7 +26,14 @@ async fn main() -> std::io::Result<()> {
     init_log();
     info!("启动成功");
     HttpServer::new(|| {
+        // 允许跨域
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method()
+            .allow_any_header()
+            .max_age(3600);
         App::new()
+            .wrap(cors)
             .wrap(TokenCheck)
             .service(users)
             .service(get_user)
