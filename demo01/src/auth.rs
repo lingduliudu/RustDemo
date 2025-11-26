@@ -3,8 +3,14 @@ use actix_web::{
     dev::{ServiceRequest, ServiceResponse, forward_ready},
 };
 use futures_util::future::{LocalBoxFuture, Ready, ready};
+// 结构体
 pub struct TokenCheck;
 
+/**************************************************************
+* Description: 实现方法
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl<S, B> actix_web::dev::Transform<S, ServiceRequest> for TokenCheck
 where
     S: actix_web::dev::Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
