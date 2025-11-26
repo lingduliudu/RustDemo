@@ -49,7 +49,9 @@ where
                 }
             }
             // token 缺失或不合法，直接返回 401
-            Err(actix_web::error::ErrorImATeapot("Token invalid or missing"))
+            Err(actix_web::error::ErrorUnauthorized(
+                "Token invalid or missing",
+            ))
         })
     }
 }
