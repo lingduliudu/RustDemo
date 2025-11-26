@@ -25,10 +25,7 @@ impl eframe::App for MyApp {
                 if self.button_height > 100.0 {
                     self.button_height = 100.0;
                 }
-            }
-            if ui.button("重置数值").clicked() {
-                self.value -= 1.0;
-                self.button_height += 1.0;
+                self.input_text = format!("当前高度是:{}", self.button_height);
             }
         });
     }
@@ -62,7 +59,7 @@ fn main() -> Result<(), eframe::Error> {
             Box::new(MyApp {
                 value: 50.0, // 初始化值为 50.0
                 input_text: "".to_owned(),
-                button_height: 20.0,
+                button_height: 70.0,
             })
         }),
     )
