@@ -1,9 +1,11 @@
 use actix_web::{App, HttpServer};
+
 use log::info;
 mod api;
 use api::*;
 use log4rs;
-
+mod auth;
+use auth::TokenCheck;
 fn init_log() {
     log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
 }
@@ -14,6 +16,7 @@ async fn main() -> std::io::Result<()> {
     info!("启动成功");
     HttpServer::new(|| {
         App::new()
+            .wrap(TokenCheck)
             .service(users)
             .service(get_user)
             .service(list)
