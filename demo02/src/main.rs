@@ -1,5 +1,6 @@
 use eframe::egui;
-
+mod defend;
+use defend::is_expire;
 /// 定义应用程序状态结构体
 struct MyApp {
     // 存储一个状态值，用于与滑块交互
@@ -33,6 +34,7 @@ impl eframe::App for MyApp {
 
 // 主函数入口
 fn main() -> Result<(), eframe::Error> {
+    //is_expire();
     // 配置窗口选项
     let options = eframe::NativeOptions {
         // 初始窗口大小
