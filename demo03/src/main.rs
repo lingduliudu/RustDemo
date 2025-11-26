@@ -1,5 +1,5 @@
 use std::process::Command;
-#[link(name = "tot_utils", kind = "dylib")]
+#[link(name = "tot_utils", kind = "static")]
 unsafe extern "C" {
     pub fn add(left: u64, right: u64) -> u64;
 }
