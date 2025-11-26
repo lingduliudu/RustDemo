@@ -6,10 +6,21 @@ use api::*;
 use log4rs;
 mod auth;
 use auth::TokenCheck;
+
+/**************************************************************
+* Description: 初始化日志
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 fn init_log() {
     log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
 }
 
+/**************************************************************
+* Description: 主方法
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     init_log();
