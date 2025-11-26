@@ -1,0 +1,10 @@
+[
+  {
+    "label": "Run",
+    "adapter": "CodeLLDB",
+    "command": "cmake -B build -S . ; cmake --build build",
+    //"args": ["-B", "build", "-S", "."],
+    "args": [],
+    "type": "process"
+  }
+]
