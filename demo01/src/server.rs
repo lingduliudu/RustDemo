@@ -6,6 +6,25 @@ pub struct ChatServer {
     counter: usize,
 }
 
+/**************************************************************
+* Description: 定义一个广播消息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct BroadcastMessage {
+    pub msg: String,
+}
+
+impl Handler<BroadcastMessage> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: BroadcastMessage, _ctx: &mut Context<Self>) {
+        self.broadcast(msg.msg);
+    }
+}
+
 impl ChatServer {
     pub fn new() -> Self {
         Self {
@@ -30,6 +49,7 @@ impl Actor for ChatServer {
 #[derive(Message)]
 #[rtype(result = "usize")]
 pub struct Connect {
+    pub id: usize,
     pub addr: Recipient<ServerMessage>,
 }
 
@@ -58,9 +78,8 @@ impl Handler<Connect> for ChatServer {
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         self.counter += 1;
-        let id = self.counter;
-        self.sessions.insert(id, msg.addr);
-        id
+        self.sessions.insert(msg.id, msg.addr);
+        msg.id
     }
 }
 
@@ -77,9 +96,14 @@ impl Handler<ClientMessage> for ChatServer {
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
         let text = format!("User {}: {}", msg.id, msg.msg);
-
-        for (_id, addr) in &self.sessions {
-            let _ = addr.do_send(ServerMessage(text.clone()));
+        let x = &self.sessions.get(&msg.id);
+        match x {
+            Some(addr) => {
+                addr.do_send(ServerMessage(text.clone()));
+            }
+            None => {
+                // 未找到链接已经断开/关闭
+            }
         }
     }
 }

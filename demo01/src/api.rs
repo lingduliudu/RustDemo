@@ -83,18 +83,37 @@ pub async fn raw(body: web::Bytes) -> String {
 /// 接收 HTTP 请求并主动广播到所有 WebSocket 会话
 #[post("/broadcast")]
 pub async fn broadcast_http(body: String, server: web::Data<Addr<ChatServer>>) -> HttpResponse {
-    server.do_send(crate::server::ClientMessage {
-        id: 0,
+    server.do_send(crate::server::BroadcastMessage {
         msg: format!("(API) {}", body),
     });
+    HttpResponse::Ok().body("sent")
+}
 
+/// 接收 HTTP 请求并主动广播到所有 WebSocket 会话
+#[post("/sendToClient/{id}")]
+pub async fn send_to_client(
+    path: web::Path<UserPath>,
+    body: String,
+    server: web::Data<Addr<ChatServer>>,
+) -> HttpResponse {
+    let idu: usize = path.id as usize;
+    server.do_send(crate::server::ClientMessage {
+        id: idu,
+        msg: format!("(API) {}", body),
+    });
     HttpResponse::Ok().body("sent")
 }
 
 pub async fn ws_route(
+    path: web::Path<UserPath>,
     req: HttpRequest,
     stream: web::Payload,
     srv: web::Data<Addr<ChatServer>>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    ws::start(tws::WsSession::new(srv.get_ref().clone()), &req, stream)
+    let x = path.id;
+    ws::start(
+        tws::WsSession::new(x as usize, srv.get_ref().clone()),
+        &req,
+        stream,
+    )
 }

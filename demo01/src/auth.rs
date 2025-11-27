@@ -47,7 +47,7 @@ where
         let token_header = req.headers().get("token").cloned();
         let path = req.uri().to_string();
         let fut = self.service.call(req);
-        if path.contains("/ws") {
+        if path.contains("/ws/") {
             return Box::pin(async move { fut.await });
         }
 

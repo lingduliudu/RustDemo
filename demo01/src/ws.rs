@@ -9,8 +9,8 @@ pub struct WsSession {
 }
 
 impl WsSession {
-    pub fn new(server: Addr<ChatServer>) -> Self {
-        Self { id: 0, server }
+    pub fn new(id: usize, server: Addr<ChatServer>) -> Self {
+        Self { id, server }
     }
 }
 
@@ -19,8 +19,12 @@ impl Actor for WsSession {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = ctx.address().recipient();
+        let client_id = self.id;
         self.server
-            .send(Connect { addr })
+            .send(Connect {
+                id: client_id,
+                addr,
+            })
             .into_actor(self)
             .then(|res, act, _ctx| {
                 if let Ok(id) = res {
