@@ -1,12 +1,15 @@
 use actix_cors::Cors;
-use actix_web::{App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use log::info;
 mod api;
 use api::*;
 use log4rs;
 mod auth;
+mod server;
+use actix::prelude::*;
 use auth::TokenCheck;
-
+use server::ChatServer;
+mod ws;
 /**************************************************************
 * Description: 初始化日志
 * Author: yuanhao
@@ -25,7 +28,8 @@ fn init_log() {
 async fn main() -> std::io::Result<()> {
     init_log();
     info!("启动成功");
-    HttpServer::new(|| {
+    let server = ChatServer::new().start();
+    HttpServer::new(move || {
         // 允许跨域
         let cors = Cors::default()
             .allow_any_origin()
@@ -35,7 +39,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(TokenCheck)
+            .app_data(web::Data::new(server.clone()))
+            .route("/ws", web::get().to(api::ws_route))
             .service(users)
+            .service(api::broadcast_http)
             .service(get_user)
             .service(list)
             .service(create)

@@ -1,7 +1,10 @@
+use crate::server::*;
+use crate::ws as tws;
+use actix::prelude::*;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web};
+use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
 use tot_macro::totlog;
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     pub id: u32,
@@ -75,4 +78,23 @@ pub async fn header(req: HttpRequest) -> String {
 pub async fn raw(body: web::Bytes) -> String {
     let s = String::from_utf8_lossy(&body);
     format!("raw body = {}", s)
+}
+
+/// 接收 HTTP 请求并主动广播到所有 WebSocket 会话
+#[post("/broadcast")]
+pub async fn broadcast_http(body: String, server: web::Data<Addr<ChatServer>>) -> HttpResponse {
+    server.do_send(crate::server::ClientMessage {
+        id: 0,
+        msg: format!("(API) {}", body),
+    });
+
+    HttpResponse::Ok().body("sent")
+}
+
+pub async fn ws_route(
+    req: HttpRequest,
+    stream: web::Payload,
+    srv: web::Data<Addr<ChatServer>>,
+) -> Result<HttpResponse, actix_web::Error> {
+    ws::start(tws::WsSession::new(srv.get_ref().clone()), &req, stream)
 }
