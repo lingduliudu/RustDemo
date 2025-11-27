@@ -1,9 +1,9 @@
 use crate::server::*;
 use actix::prelude::*;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web};
+use askama::Template;
 use serde::{Deserialize, Serialize};
 use tot_macro::totlog;
-
 /**************************************************************
 * Description: 基本体
 * Author: yuanhao
@@ -129,6 +129,31 @@ pub async fn broadcast_http(body: String, server: web::Data<Addr<ChatServer>>) -
         msg: format!("(API) {}", body),
     });
     HttpResponse::Ok().body("sent")
+}
+
+/**************************************************************
+* Description: 模板渲染
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
+
+#[derive(Template)]
+#[template(path = "test.html")]
+struct HelloTemplate {
+    name: String,
+}
+
+#[get("/parseTemplate")]
+pub async fn parse_template() -> impl Responder {
+    let tpl = HelloTemplate {
+        name: String::from("中国"),
+    };
+    match tpl.render() {
+        Ok(body) => HttpResponse::Ok()
+            .content_type("text/html; charset=utf-8")
+            .body(body),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Render error: {}", e)),
+    }
 }
 
 /**************************************************************

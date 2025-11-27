@@ -52,6 +52,7 @@ async fn main() -> std::io::Result<()> {
             .service(login)
             .service(header)
             .service(raw)
+            .service(parse_template)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
