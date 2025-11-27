@@ -1,4 +1,9 @@
 use std::process::Command;
+mod global_cache;
+mod test;
+use test::add_into;
+mod test2;
+use test2::add_into as add_into2;
 #[link(name = "tot_utils", kind = "static")]
 unsafe extern "C" {
     pub fn add(left: u64, right: u64) -> u64;
@@ -36,4 +41,11 @@ fn main() {
     let y = unsafe { add(12, 2332) };
     println!("结果是 {}", y);
     Command::new("cmd").args(["/C", "pause"]).status().unwrap();
+
+    // 测试全局缓存
+    add_into();
+    add_into2();
+    if let Some(value) = global_cache::GLOBAL_MAP.lock().unwrap().get("key1") {
+        println!("Value: {}", value);
+    }
 }
