@@ -1,6 +1,26 @@
 use actix::prelude::*;
 use std::collections::HashMap;
 
+/**************************************************************
+* 对话服务要求规则:
+* 1. 想要处理必须先定义一条消息类型 然后使用do_send(消息类型) 进行消息通话和调用
+***************************************************************
+*/
+
+/**************************************************************
+* Description: 对话中心服务直接发送的消息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct ServerMessage(pub String);
+
+/**************************************************************
+* Description: 对话服务中心
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 pub struct ChatServer {
     sessions: HashMap<usize, Recipient<ServerMessage>>,
     counter: usize,
@@ -17,6 +37,11 @@ pub struct BroadcastMessage {
     pub msg: String,
 }
 
+/**************************************************************
+* Description: 定义广播消息处理逻辑
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Handler<BroadcastMessage> for ChatServer {
     type Result = ();
 
@@ -25,6 +50,11 @@ impl Handler<BroadcastMessage> for ChatServer {
     }
 }
 
+/**************************************************************
+* Description: 定义对话服务中心独属方法
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl ChatServer {
     pub fn new() -> Self {
         Self {
@@ -32,8 +62,6 @@ impl ChatServer {
             counter: 0,
         }
     }
-
-    /// 供外部（API）直接调用，进行广播
     pub fn broadcast(&self, text: String) {
         for (_id, addr) in &self.sessions {
             let _ = addr.do_send(ServerMessage(text.clone()));
@@ -41,38 +69,31 @@ impl ChatServer {
     }
 }
 
+/**************************************************************
+* Description: 实现Actor 对话中心服务
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Actor for ChatServer {
     type Context = Context<Self>;
 }
 
-/// Session 注册
+/**************************************************************
+* Description: 连接时消息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[derive(Message)]
 #[rtype(result = "usize")]
 pub struct Connect {
     pub id: usize,
     pub addr: Recipient<ServerMessage>,
 }
-
-/// Session 离开
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct Disconnect {
-    pub id: usize,
-}
-
-/// Session 发消息到服务器（广播给所有人）
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct ClientMessage {
-    pub id: usize,
-    pub msg: String,
-}
-
-/// 服务器发消息到 Session
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct ServerMessage(pub String);
-
+/**************************************************************
+* Description: 连接时消息的处理
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Handler<Connect> for ChatServer {
     type Result = usize;
 
@@ -83,6 +104,21 @@ impl Handler<Connect> for ChatServer {
     }
 }
 
+/**************************************************************
+* Description: 断开连接时消息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct Disconnect {
+    pub id: usize,
+}
+/**************************************************************
+* Description: 连接断开时消息的处理
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Handler<Disconnect> for ChatServer {
     type Result = ();
 
@@ -91,9 +127,24 @@ impl Handler<Disconnect> for ChatServer {
     }
 }
 
+/**************************************************************
+* Description: 1 vs 1 消息 通过对话中心通信
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct ClientMessage {
+    pub id: usize,
+    pub msg: String,
+}
+/**************************************************************
+* Description: 1 vs 1 消息 通过对话中心处理逻辑
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
-
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
         let text = format!("User {}: {}", msg.id, msg.msg);
         let x = &self.sessions.get(&msg.id);

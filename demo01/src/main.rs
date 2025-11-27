@@ -9,7 +9,9 @@ mod server;
 use actix::prelude::*;
 use auth::TokenCheck;
 use server::ChatServer;
+mod config;
 mod ws;
+use config::ws_route;
 /**************************************************************
 * Description: 初始化日志
 * Author: yuanhao
@@ -40,7 +42,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(TokenCheck)
             .app_data(web::Data::new(server.clone()))
-            .route("/ws/{id}", web::get().to(api::ws_route))
+            .route("/ws/{id}", web::get().to(ws_route))
             .service(users)
             .service(broadcast_http)
             .service(get_user)

@@ -3,17 +3,32 @@ use actix_web_actors::ws;
 
 use crate::server::*;
 
+/**************************************************************
+* Description: websocket 连接基本配置
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 pub struct WsSession {
     pub id: usize,
     pub server: Addr<ChatServer>,
 }
 
+/**************************************************************
+* Description: websocket 连接初始化配置
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl WsSession {
     pub fn new(id: usize, server: Addr<ChatServer>) -> Self {
         Self { id, server }
     }
 }
 
+/**************************************************************
+* Description: websocket 连接时的连接/断开 配置
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Actor for WsSession {
     type Context = ws::WebsocketContext<Self>;
 
@@ -40,6 +55,11 @@ impl Actor for WsSession {
     }
 }
 
+/**************************************************************
+* Description: websocket 连接的消息处理逻辑
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
     fn handle(
         &mut self,
@@ -59,6 +79,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
     }
 }
 
+/**************************************************************
+* Description:  针对服务器的消息处理 (必须)
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 impl Handler<ServerMessage> for WsSession {
     type Result = ();
 

@@ -1,10 +1,14 @@
 use crate::server::*;
-use crate::ws as tws;
 use actix::prelude::*;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web};
-use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
 use tot_macro::totlog;
+
+/**************************************************************
+* Description: 基本体
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     pub id: u32,
@@ -27,6 +31,11 @@ pub struct LoginForm {
     password: String,
 }
 
+/**************************************************************
+* Description: 获取json信息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[get("/users")]
 #[totlog("获取用户")]
 pub async fn users() -> impl Responder {
@@ -41,31 +50,55 @@ pub async fn users() -> impl Responder {
         },
     ])
 }
-
+/**************************************************************
+* Description: 获取路径信息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[get("/users/{id}")]
 #[totlog]
 pub async fn get_user(path: web::Path<UserPath>) -> impl Responder {
     HttpResponse::Ok().body(format!("User ID = {}", path.id))
 }
 
+/**************************************************************
+* Description: 获取list数据
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[get("/list")]
 #[totlog]
 pub async fn list(query: web::Query<QueryParams>) -> impl Responder {
     format!("page = {:?}, size = {:?}", query.page, query.size)
 }
 
+/**************************************************************
+* Description: 获取json体
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[post("/create")]
 #[totlog]
 pub async fn create(body: web::Json<User>) -> impl Responder {
     format!("User = {} ({})", body.name, body.id)
 }
 
+/**************************************************************
+* Description: 获取form信息
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[post("/login")]
 #[totlog]
 pub async fn login(form: web::Form<LoginForm>) -> String {
     format!("username={}, password={}", form.username, form.password)
 }
 
+/**************************************************************
+* Description: 获取http header
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[get("/header")]
 #[totlog]
 pub async fn header(req: HttpRequest) -> String {
@@ -73,6 +106,11 @@ pub async fn header(req: HttpRequest) -> String {
     format!("token = {:?}", key)
 }
 
+/**************************************************************
+* Description: 测试http 原文
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[post("/raw")]
 #[totlog]
 pub async fn raw(body: web::Bytes) -> String {
@@ -80,7 +118,11 @@ pub async fn raw(body: web::Bytes) -> String {
     format!("raw body = {}", s)
 }
 
-/// 接收 HTTP 请求并主动广播到所有 WebSocket 会话
+/**************************************************************
+* Description:  接收 HTTP 请求并主动广播到所有 WebSocket 会话
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[post("/broadcast")]
 pub async fn broadcast_http(body: String, server: web::Data<Addr<ChatServer>>) -> HttpResponse {
     server.do_send(crate::server::BroadcastMessage {
@@ -89,7 +131,11 @@ pub async fn broadcast_http(body: String, server: web::Data<Addr<ChatServer>>) -
     HttpResponse::Ok().body("sent")
 }
 
-/// 接收 HTTP 请求并主动广播到所有 WebSocket 会话
+/**************************************************************
+* Description: 直接发送消息给对应客户端
+* Author: yuanhao
+* Versions: V1
+**************************************************************/
 #[post("/sendToClient/{id}")]
 pub async fn send_to_client(
     path: web::Path<UserPath>,
@@ -99,21 +145,7 @@ pub async fn send_to_client(
     let idu: usize = path.id as usize;
     server.do_send(crate::server::ClientMessage {
         id: idu,
-        msg: format!("(API) {}", body),
+        msg: format!("{}", body),
     });
     HttpResponse::Ok().body("sent")
-}
-
-pub async fn ws_route(
-    path: web::Path<UserPath>,
-    req: HttpRequest,
-    stream: web::Payload,
-    srv: web::Data<Addr<ChatServer>>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let x = path.id;
-    ws::start(
-        tws::WsSession::new(x as usize, srv.get_ref().clone()),
-        &req,
-        stream,
-    )
 }
