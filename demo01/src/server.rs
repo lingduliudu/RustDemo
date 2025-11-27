@@ -133,7 +133,7 @@ impl Handler<Disconnect> for ChatServer {
 * Versions: V1
 **************************************************************/
 #[derive(Message)]
-#[rtype(result = "()")]
+#[rtype(result = "(i32)")]
 pub struct ClientMessage {
     pub id: usize,
     pub msg: String,
@@ -144,16 +144,18 @@ pub struct ClientMessage {
 * Versions: V1
 **************************************************************/
 impl Handler<ClientMessage> for ChatServer {
-    type Result = ();
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+    type Result = i32;
+    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
         let text = format!("User {}: {}", msg.id, msg.msg);
         let x = &self.sessions.get(&msg.id);
         match x {
             Some(addr) => {
                 addr.do_send(ServerMessage(text.clone()));
+                return 1;
             }
             None => {
                 // 未找到链接已经断开/关闭
+                return 0;
             }
         }
     }

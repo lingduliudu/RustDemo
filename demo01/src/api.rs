@@ -141,11 +141,18 @@ pub async fn send_to_client(
     path: web::Path<UserPath>,
     body: String,
     server: web::Data<Addr<ChatServer>>,
-) -> HttpResponse {
+) -> String {
     let idu: usize = path.id as usize;
-    server.do_send(crate::server::ClientMessage {
-        id: idu,
-        msg: format!("{}", body),
-    });
-    HttpResponse::Ok().body("sent")
+    // 同步发送判断结果
+    let result = server
+        .send(crate::server::ClientMessage {
+            id: idu,
+            msg: format!("{}", body),
+        })
+        .await
+        .unwrap();
+    if result == 0 {
+        return format!("对方已离线");
+    }
+    return format!("发送成功");
 }
