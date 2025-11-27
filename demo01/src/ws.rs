@@ -80,7 +80,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
 }
 
 /**************************************************************
-* Description:  针对服务器的消息处理 (必须)
+* Description:  对话服务中心发送消息给客户端处理逻辑
 * Author: yuanhao
 * Versions: V1
 **************************************************************/
