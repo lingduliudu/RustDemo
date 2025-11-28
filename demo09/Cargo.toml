@@ -1,0 +1,10 @@
+[package]
+name = "demo09"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+tot_macro = {path = "../tot_macro"}
+log = "0.4"
+log4rs = "1.4.0"

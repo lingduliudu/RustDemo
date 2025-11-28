@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, FnArg, ItemFn};
+use syn::{parse_macro_input, FnArg, ItemFn, Pat, ReturnType, Type};
 
 #[proc_macro_attribute]
 pub fn totlog(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -49,7 +49,7 @@ pub fn totlog(attr: TokenStream, item: TokenStream) -> TokenStream {
                 if !#params.trim().is_empty() {
                     info!("totlog 参数:{}",#params.trim());
                 }
-                info!("调用函数: {}({})",now.format("%Y-%m-%d %H:%M:%S.%f"), #fn_name, args_str);
+                info!("调用函数: {}({})", #fn_name, args_str);
                 let __totlog_result = { #block };
                 info!("调用函数: {}({}) 返回: {:?}", #fn_name,args_str, __totlog_result);
 
@@ -59,4 +59,51 @@ pub fn totlog(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     gen.into()
+}
+#[proc_macro_attribute]
+pub fn to_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let func = parse_macro_input!(item as ItemFn);
+
+    let vis = &func.vis;
+    let sig = &func.sig;
+    let block = &func.block;
+    let name = &sig.ident;
+    let inputs = &sig.inputs;
+    let output = &sig.output;
+
+    // inner 函数名
+    let inner_name = syn::Ident::new(&format!("{}_inner", name), name.span());
+
+    // ----------- 提取返回类型 T -------------
+    let ret_type: Type = match output {
+        ReturnType::Default => syn::parse_quote!(()),
+        ReturnType::Type(_, ty) => *ty.clone(),
+    };
+
+    // ----------- 提取参数名字 -------------
+    let arg_idents: Vec<_> = inputs
+        .iter()
+        .map(|arg| match arg {
+            FnArg::Typed(pat_type) => match &*pat_type.pat {
+                Pat::Ident(ident) => ident.ident.clone(),
+                _ => panic!("#[spawn_async] only supports simple identifier parameters"),
+            },
+            _ => panic!("#[spawn_async] does not support &self"),
+        })
+        .collect();
+
+    // ----------- 生成代码 -------------
+    let expanded = quote! {
+        // 1. inner 函数包含原用户的函数体
+        fn #inner_name(#inputs) -> #ret_type #block
+
+        // 2. 对用户暴露的 spawn 包装
+        #vis fn #name(#inputs) -> std::thread::JoinHandle<#ret_type> {
+            std::thread::spawn(move || {
+                #inner_name(#(#arg_idents),*)
+            })
+        }
+    };
+
+    TokenStream::from(expanded)
 }
