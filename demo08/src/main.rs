@@ -7,7 +7,7 @@ mod test_sql;
 fn main() {
     let connection = Sqlite::open().conn;
     // 初始化数据
-    test_sql::init_test_data(&connection);
+    //test_sql::init_test_data(&connection);
     let mut users = Vec::new();
     let mut statement = connection.prepare("SELECT * FROM users ").unwrap();
     while let Ok(sqlite::State::Row) = statement.next() {

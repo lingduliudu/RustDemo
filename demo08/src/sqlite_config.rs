@@ -4,7 +4,10 @@ pub struct Sqlite {
 
 impl Sqlite {
     pub fn open() -> Self {
-        let connection = sqlite::open(":memory:").unwrap();
+        // 内存级别
+        // let connection = sqlite::open(":memory:").unwrap();
+        // 文件
+        let connection = sqlite::open("my.db").unwrap();
         Self { conn: connection }
     }
 }
