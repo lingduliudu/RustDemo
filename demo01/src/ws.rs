@@ -1,7 +1,8 @@
+use crate::server::*;
 use actix::prelude::*;
 use actix_web_actors::ws;
-
-use crate::server::*;
+use log::info;
+use serde_json::Value;
 
 /**************************************************************
 * Description: websocket 连接基本配置
@@ -68,10 +69,21 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
     ) {
         match msg {
             Ok(ws::Message::Text(text)) => {
-                self.server.do_send(ClientMessage {
-                    id: self.id,
-                    msg: text.to_string(),
-                });
+                // 判断是否是发给他人的消息
+                match serde_json::from_str::<Value>(text.to_string().as_str()) {
+                    Ok(v) => {
+                        info!("测试消息原始数据:{}", v);
+                        if !v["user_id"].is_null() {
+                            self.server.do_send(ClientMessage {
+                                id: v["user_id"].as_i64().unwrap() as usize,
+                                msg: v["msg"].as_str().unwrap().to_string(),
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        info!("解析错误?{}", e);
+                    }
+                }
             }
             Ok(ws::Message::Ping(s)) => ctx.pong(&s),
             _ => {}

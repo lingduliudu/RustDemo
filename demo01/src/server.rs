@@ -146,7 +146,7 @@ pub struct ClientMessage {
 impl Handler<ClientMessage> for ChatServer {
     type Result = i32;
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
-        let text = format!("User {}: {}", msg.id, msg.msg);
+        let text = format!("{}", msg.msg);
         let x = &self.sessions.get(&msg.id);
         match x {
             Some(addr) => {
