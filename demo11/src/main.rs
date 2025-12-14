@@ -1,8 +1,6 @@
 use interprocess::os::windows::named_pipe::PipeStream;
 use interprocess::os::windows::named_pipe::pipe_mode::Bytes;
 use std::io::{self, Read, Write};
-use std::thread::sleep;
-use std::time::Duration;
 
 fn main() -> std::io::Result<()> {
     println!("Client connected.");
