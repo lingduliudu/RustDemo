@@ -4,8 +4,7 @@ impl Person {
         Person {}
     }
 }
-
-fn test(p: &Person) {}
+fn test(_p: &Person) {}
 fn main() {
     println!("testprint");
     let p1 = Person::new();
