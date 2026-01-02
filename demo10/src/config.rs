@@ -15,12 +15,12 @@ pub struct UserIdPath {
 * Versions: V1
 **************************************************************/
 pub async fn ws_route(
-    path: web::Path<UserIdPath>,
+   // path: web::Path<UserIdPath>,
     req: HttpRequest,
     stream: web::Payload,
     srv: web::Data<Addr<ChatServer>>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let x = path.id;
+    let x = 10;
     ws::start(
         tws::WsSession::new(x as usize, srv.get_ref().clone()),
         &req,

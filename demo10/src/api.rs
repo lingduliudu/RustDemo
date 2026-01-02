@@ -1,7 +1,7 @@
-use std::fmt::format;
-
-use crate::global_cache::{PORT, X};
+use crate::htmlparse;
+use crate::markdownparse;
 use actix_web::{HttpResponse, Responder, get};
+use crate::global_cache::{X};
 /**************************************************************
 * Description: 获取form信息
 * Author: yuanhao
@@ -11,48 +11,35 @@ use actix_web::{HttpResponse, Responder, get};
 pub async fn index() -> impl Responder {
     let data_guard = X.lock().unwrap();
 
+    let file_content = std::fs::read_to_string((*data_guard).to_string()).unwrap();
+    let mut response_html = String::new();
+    if is_html((*data_guard).as_str()){
+        response_html = htmlparse::get_after(file_content.clone());
+    }
+    if is_markdown((*data_guard).as_str()){
+        response_html = markdownparse::get_after(file_content.clone());
+    }
     HttpResponse::Ok()
         // 关键：设置 Content-Type 为 text/html
         .content_type("text/html; charset=utf-8")
         // 设置响应体
         .body(format!(
-            "{}{}",
-            std::fs::read_to_string((*data_guard).to_string()).unwrap(),
-            get_after()
+            "{}",
+            response_html
         ))
 }
 
-fn get_after() -> String {
-    let s1 = String::from(
-        r#"
-    <script>
-        const WS_ADDRESS = "ws://127.0.0.1:"#,
-    );
-    let mut x: u16 = 0;
-    unsafe {
-        x = PORT;
+
+fn is_html(path: &str) -> bool {
+    match std::path::Path::new(path).extension().unwrap().to_str().unwrap(){
+        "html" => return true,
+        _      => return false,
     }
-    let s2 = format!("{}", x);
-    let s3 = String::from(
-        r#"/ws/10";
-            let socket;
-            let reconnectAttempts = 0;
-            function connectWebSocket(){
-                socket = new WebSocket(WS_ADDRESS);
-                socket.onopen = function(e) {
-                };
-                socket.onmessage = function(event) {
-                    console.log(`[message] 收到数据: ${event.data}`);
-                    window.location.reload();
-                };
-                socket.onclose = function(event) {
-                };
-                socket.onerror = function(error) {
-                };
-            }
-            window.onload = connectWebSocket;
-        </script>
-"#,
-    );
-    format!("{}{}{}", s1, s2, s3)
+}
+
+fn is_markdown(path: &str) -> bool {
+    match std::path::Path::new(path).extension().unwrap().to_str().unwrap() {
+        "md" => return true,
+        _      => return false,
+    }
 }

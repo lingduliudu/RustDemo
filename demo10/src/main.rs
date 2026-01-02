@@ -1,7 +1,9 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, web};
-use log::{error, info};
+use log::{info};
 mod api;
+mod htmlparse;
+mod markdownparse;
 use api::*;
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
@@ -16,6 +18,7 @@ use config::ws_route;
 use tot_macro::to_async;
 mod file_watch;
 mod global_cache;
+use actix_files::Files;
 /**************************************************************
 * Description: 初始化日志
 * Author: yuanhao
@@ -89,11 +92,13 @@ async fn main() -> std::io::Result<()> {
             .allow_any_header()
             .max_age(3600);
         App::new()
-            .wrap(cors)
-            //.wrap(TokenCheck)
-            .app_data(web::Data::new(server.clone()))
-            .route("/ws/{id}", web::get().to(ws_route))
             .service(index)
+            .route("/ws/10", web::get().to(ws_route))
+            .service(Files::new("/", current_dir.as_path().to_str().unwrap()).prefer_utf8(true))
+            .wrap(cors)
+            .app_data(web::Data::new(server.clone()))
+
+
     })
     .bind(("127.0.0.1", port))?
     .run()
