@@ -15,7 +15,7 @@ pub struct UserIdPath {
 * Versions: V1
 **************************************************************/
 pub async fn ws_route(
-   // path: web::Path<UserIdPath>,
+    // path: web::Path<UserIdPath>,
     req: HttpRequest,
     stream: web::Payload,
     srv: web::Data<Addr<ChatServer>>,
