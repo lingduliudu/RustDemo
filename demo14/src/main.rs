@@ -1,4 +1,6 @@
 #![windows_subsystem = "windows"]
+use windows::Win32::UI::WindowsAndMessaging::LoadImageW;
+use windows::Win32::UI::WindowsAndMessaging::{IMAGE_ICON, LR_LOADFROMFILE};
 use std::ptr::null_mut;
 use windows::{
     core::w,
@@ -47,7 +49,11 @@ unsafe fn create_tray_icon(hwnd: HWND) {
     nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.uCallbackMessage = TRAY_MSG;
 
-    nid.hIcon = LoadIconW(None, IDI_APPLICATION).unwrap_or_default();
+    nid.hIcon = LoadIconW(
+        GetModuleHandleW(None).unwrap(),
+        w!("IDI_ICON1"),
+    ).unwrap_or_default();
+
 
     let tip = "Taskbar Scroll Opener\0";
     let tip_utf16: Vec<u16> = tip.encode_utf16().collect();
