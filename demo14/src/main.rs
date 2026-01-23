@@ -1,19 +1,19 @@
 #![windows_subsystem = "windows"]
+use std::ptr::null_mut;
 use windows::Win32::UI::WindowsAndMessaging::LoadImageW;
 use windows::Win32::UI::WindowsAndMessaging::{IMAGE_ICON, LR_LOADFROMFILE};
-use std::ptr::null_mut;
 use windows::{
     core::w,
     Win32::{
         Foundation::*,
         System::LibraryLoader::*,
-        UI::{
-            Input::KeyboardAndMouse::*,
-            Shell::*,
-            WindowsAndMessaging::*,
-        },
+        UI::{Input::KeyboardAndMouse::*, Shell::*, WindowsAndMessaging::*},
     },
 };
+
+use std::time::{Duration, Instant};
+static mut LAST_TRIGGER: Option<Instant> = None;
+const TRIGGER_INTERVAL: Duration = Duration::from_millis(1000); // 1000ms 内只触发一次
 
 static mut HOOK: HHOOK = HHOOK(null_mut());
 const TRAY_MSG: u32 = WM_USER + 1;
@@ -23,10 +23,33 @@ unsafe extern "system" fn mouse_hook_proc(code: i32, wparam: WPARAM, lparam: LPA
         let info = *(lparam.0 as *const MSLLHOOKSTRUCT);
         let pt = info.pt;
 
-        let screen_height = GetSystemMetrics(SM_CYSCREEN);
-
+        // let screen_height = GetSystemMetrics(SM_CYSCREEN);
+        let hwnd = WindowFromPoint(pt);
+        let taskbar = FindWindowW(w!("Shell_TrayWnd"), None);
+        let mut rect = RECT::default();
+        GetWindowRect(taskbar.unwrap(), &mut rect);
+        let in_rect =
+            pt.x >= rect.left && pt.x <= rect.right && pt.y >= rect.top && pt.y <= rect.bottom;
+        // 2. 任务栏是否可见（没有被前台窗口覆盖）
+        let foreground = GetForegroundWindow();
+        let mut fg_rect = RECT::default();
+        GetWindowRect(foreground, &mut fg_rect);
+        let taskbar_visible = !(fg_rect.left <= rect.left
+            && fg_rect.right >= rect.right
+            && fg_rect.top <= rect.top
+            && fg_rect.bottom >= rect.bottom);
         // 屏幕底部 40 像素认为是任务栏区域
-        if pt.y > screen_height - 40 {
+        // if pt.y > screen_height - 40 {
+        if in_rect && taskbar_visible {
+            // ======== 新增：节流逻辑 ========
+            let now = Instant::now();
+            if let Some(last) = LAST_TRIGGER {
+                if now.duration_since(last) < TRIGGER_INTERVAL {
+                    return CallNextHookEx(HHOOK(null_mut()), code, wparam, lparam);
+                }
+            }
+            LAST_TRIGGER = Some(now);
+            // =================================
             let _ = ShellExecuteW(
                 None,
                 w!("open"),
@@ -49,11 +72,7 @@ unsafe fn create_tray_icon(hwnd: HWND) {
     nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.uCallbackMessage = TRAY_MSG;
 
-    nid.hIcon = LoadIconW(
-        GetModuleHandleW(None).unwrap(),
-        w!("IDI_ICON1"),
-    ).unwrap_or_default();
-
+    nid.hIcon = LoadIconW(GetModuleHandleW(None).unwrap(), w!("IDI_ICON1")).unwrap_or_default();
 
     let tip = "Taskbar Scroll Opener\0";
     let tip_utf16: Vec<u16> = tip.encode_utf16().collect();
@@ -126,13 +145,7 @@ fn main() {
 
         create_tray_icon(hwnd);
 
-        HOOK = SetWindowsHookExW(
-            WH_MOUSE_LL,
-            Some(mouse_hook_proc),
-            hinstance,
-            0,
-        )
-        .unwrap();
+        HOOK = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), hinstance, 0).unwrap();
 
         let mut msg = MSG::default();
         while GetMessageW(&mut msg, HWND(null_mut()), 0, 0).into() {
