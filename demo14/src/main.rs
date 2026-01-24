@@ -1,13 +1,12 @@
 #![windows_subsystem = "windows"]
+#![allow(unused)]
 use std::ptr::null_mut;
-use windows::Win32::UI::WindowsAndMessaging::LoadImageW;
-use windows::Win32::UI::WindowsAndMessaging::{IMAGE_ICON, LR_LOADFROMFILE};
 use windows::{
     core::w,
     Win32::{
         Foundation::*,
         System::LibraryLoader::*,
-        UI::{Input::KeyboardAndMouse::*, Shell::*, WindowsAndMessaging::*},
+        UI::{Shell::*, WindowsAndMessaging::*},
     },
 };
 
@@ -24,12 +23,10 @@ unsafe extern "system" fn mouse_hook_proc(code: i32, wparam: WPARAM, lparam: LPA
         let pt = info.pt;
 
         // let screen_height = GetSystemMetrics(SM_CYSCREEN);
-        let hwnd = WindowFromPoint(pt);
         let taskbar = FindWindowW(w!("Shell_TrayWnd"), None);
         let mut rect = RECT::default();
         GetWindowRect(taskbar.unwrap(), &mut rect);
-        let in_rect =
-            pt.x >= rect.left && pt.x <= rect.right && pt.y >= rect.top && pt.y <= rect.bottom;
+        let in_rect = pt.x >= rect.left && pt.x <= rect.right && pt.y >= rect.top && pt.y <= rect.bottom;
         // 2. 任务栏是否可见（没有被前台窗口覆盖）
         let foreground = GetForegroundWindow();
         let mut fg_rect = RECT::default();
