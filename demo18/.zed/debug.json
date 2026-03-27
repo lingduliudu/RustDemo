@@ -1,0 +1,38 @@
+[
+  {
+    "label": "Build",
+    "command": "cmake",
+    "args": [
+      "--build",
+      "build",
+      "-D",
+      "CMAKE_BUILD_TYPE=Debug",
+      "-G",
+      "Visual Studio 17 2022",
+      "-A",
+      "x64",
+    ],
+  },
+  {
+    "label": "Debug",
+    "request": "launch",
+    "adapter": "CodeLLDB",
+    "build": {
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "Debug"],
+      "cwd": "$ZED_WORKTREE_ROOT",
+    },
+    "program": "$ZED_WORKTREE_ROOT/build/Debug/demo.exe",
+  },
+  {
+    "label": "Release",
+    "request": "launch",
+    "adapter": "CodeLLDB",
+    "build": {
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "Release"],
+      "cwd": "$ZED_WORKTREE_ROOT",
+    },
+    "program": "$ZED_WORKTREE_ROOT/build/Release/demo.exe",
+  },
+]
