@@ -1,0 +1,35 @@
+[
+  {
+    "label": "Current",
+    "request": "launch",
+    "adapter": "CodeLLDB",
+    "build": {
+      "command": "cmake",
+      "args": ["--build", "build","--config", "Release"],
+      "cwd": "$ZED_WORKTREE_ROOT",
+    },
+    "program": "$ZED_WORKTREE_ROOT/build/Release/my_cpp20.exe",
+  },
+  {
+    "label": "Debug",
+    "request": "launch",
+    "adapter": "CodeLLDB",
+    "build": {
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "Debug"],
+      "cwd": "$ZED_WORKTREE_ROOT",
+    },
+    "program": "$ZED_WORKTREE_ROOT/build/Debug/demo.exe",
+  },
+  {
+    "label": "Release",
+    "request": "launch",
+    "adapter": "CodeLLDB",
+    "build": {
+      "command": "cmake",
+      "args": ["--build", "build","--config", "Release"],
+      "cwd": "$ZED_WORKTREE_ROOT",
+    },
+    "program": "$ZED_WORKTREE_ROOT/build/Release/my_cpp20.exe",
+  },
+]
