@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self};
 
 fn parse_timestamp(ts: &str) -> i64 {
     let parts: Vec<&str> = ts.split([':', ',']).collect();

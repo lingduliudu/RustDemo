@@ -57,10 +57,15 @@ async fn main() -> std::io::Result<()> {
         info!("参数错误: 至少需要文件名");
         std::process::exit(0);
     }
-    if args.len() == 3 {
+    if args.len() >= 3 {
         port = args[2].parse::<u16>().unwrap();
     }
-
+    let mut is_deep =  false;
+    // 是否开启深度监听
+    if args.len() == 4 {
+        info!("开启深度监听");
+        is_deep = true;
+    }
     let current_dir = std::env::current_dir().unwrap();
 
     let filename_to_watch = &args[1];
@@ -75,7 +80,7 @@ async fn main() -> std::io::Result<()> {
     }
     let server = ChatServer::new().start();
     let final_path = full_path_to_watch.clone();
-    file_watch::run_file_watcher(full_path_to_watch, server.clone());
+    file_watch::run_file_watcher(full_path_to_watch, server.clone(),is_deep);
     {
         let mut data = global_cache::X.lock().unwrap();
         data.push_str(final_path.to_str().unwrap());

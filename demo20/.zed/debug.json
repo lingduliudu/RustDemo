@@ -5,10 +5,10 @@
     "adapter": "CodeLLDB",
     "build": {
       "command": "cmake",
-      "args": ["--build", "build", "--config", "Release"],
+      "args": ["--build", "build","--config", "Release"],
       "cwd": "$ZED_WORKTREE_ROOT",
     },
-    "program": "$ZED_WORKTREE_ROOT/build/Release/my_cpp20.exe",
+    "program": "$ZED_WORKTREE_ROOT/build/Release/my_cpp22.exe",
   },
   {
     "label": "Debug",
@@ -19,7 +19,7 @@
       "args": ["--build", "build", "--config", "Debug"],
       "cwd": "$ZED_WORKTREE_ROOT",
     },
-    "program": "$ZED_WORKTREE_ROOT/build/Debug/demo.exe",
+    "program": "$ZED_WORKTREE_ROOT/build/Debug/my_cpp22.exe",
   },
   {
     "label": "Release",
@@ -27,9 +27,9 @@
     "adapter": "CodeLLDB",
     "build": {
       "command": "cmake",
-      "args": ["--build", "build", "--config", "Release"],
+      "args": ["--build", "build","--config", "Release"],
       "cwd": "$ZED_WORKTREE_ROOT",
     },
-    "program": "$ZED_WORKTREE_ROOT/build/Release/my_cpp20.exe",
+    "program": "$ZED_WORKTREE_ROOT/build/Release/my_cpp22.exe",
   },
 ]
