@@ -12,11 +12,8 @@ pub fn totlog(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name = sig.ident.to_string();
     let params = attr.to_string();
 
-<<<<<<< HEAD
+
     // 处理函数参数cehsi
-=======
-    // 处理函数参数测试冲突
->>>>>>> 9171d0e5f0a9422314e42fbf5c39b04f24e4ec62
     let args = sig.inputs.iter().map(|arg| match arg {
         FnArg::Typed(pat) => {
             let name = &pat.pat;
