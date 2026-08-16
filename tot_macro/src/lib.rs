@@ -94,7 +94,7 @@ pub fn to_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // ----------- 生成代码 -------------
     let expanded = quote! {
-        // 1. inner 函数包含原用户的函数体
+        // 1.inner 函数包含原用户的函数体
         fn #inner_name(#inputs) -> #ret_type #block
 
         // 2. 对用户暴露的 spawn 包装

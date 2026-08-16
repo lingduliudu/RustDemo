@@ -1,18 +1,207 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button } from "std-widgets.slint";
+struct TileData {
+    image: image,
+    image_visible: bool,
+    solved: bool,
+}
+struct ScoreRow {
+    name: string,
+    score: int,
+    status: string,
+}
+component MyTile inherits Rectangle {
+    callback clicked; // 自定义回调
+    in property <bool> open_curtain;
+    in property <bool> solved;
+    in property <image> icon;
+    height: 64px;
+    width: 64px;
+    background: solved ? #34CE57 : #3960D5;
+    animate background { duration: 800ms; }
+    Image { // 内部图形
+        source: icon;
+        width: parent.width;
+        height: parent.height;
+    }
 
-export component AppWindow inherits Window {
-    in-out property <int> counter: 42;
-    callback request-increase-value();
-    VerticalBox {
-        Text {
-            text: "Counter: \{root.counter}";
+    Rectangle {
+        background: #193076;
+        x: 0px;
+        width: open_curtain ? 0px : (parent.width / 2);
+        height: parent.height;
+        animate width {
+            duration: 250ms;
+            easing: ease-in;
         }
+    }
 
-        Button {
-            text: "Increase value";
-            clicked => {
-                root.request-increase-value();
+    Rectangle {
+        background: #193076;
+        x: open_curtain ? parent.width : (parent.width / 2);
+        width: open_curtain ? 0px : (parent.width / 2);
+        height: parent.height;
+        animate width {
+            duration: 250ms;
+            easing: ease-in;
+        }
+        animate x {
+            duration: 250ms;
+            easing: ease-in;
+        }
+    }
+
+    TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+component TableHeader inherits Rectangle {
+    height: 36px;
+    background: #2D2D2D;
+    Rectangle {
+        width: parent.width;
+        height: 1px;
+        y: parent.height - 1px;
+        background: #555555;
+    }
+
+    Text {
+        text: "Name";
+        x: 10px;
+        vertical-alignment: center;
+        color: white;
+    }
+
+    Text {
+        text: "Score";
+        x: 140px;
+        vertical-alignment: center;
+        color: white;
+    }
+
+    Text {
+        text: "Status";
+        x: 240px;
+        vertical-alignment: center;
+        color: white;
+    }
+}
+
+component TableRowItem inherits Rectangle {
+    in property <int> index;
+    in property <string> name;
+    in property <int> score;
+    in property <string> status;
+    height: 32px;
+    background: mod(index, 2) == 0 ? #FFFFFF : #F3F4F6;
+    Rectangle {
+        width: parent.width;
+        height: 1px;
+        y: parent.height - 1px;
+        background: #D0D0D0;
+    }
+
+    Text {
+        text: name;
+        x: 10px;
+        vertical-alignment: center;
+        color: #202020;
+    }
+
+    Text {
+        text: score;
+        x: 140px;
+        vertical-alignment: center;
+        color: #202020;
+    }
+
+    Text {
+        text: status;
+        x: 240px;
+        vertical-alignment: center;
+        color: #202020;
+    }
+}
+
+// 主界面
+export component AppWindow inherits Window {
+    width: 360px;
+    height: 520px;
+    callback check_if_pair_solved();
+    in property <bool> disable_tiles;
+    in-out property <[TileData]> tile_datas:[
+        { image:@image-url("icons/at.png") },
+        { image:@image-url("icons/bus.png") },
+        { image:@image-url("icons/at.png") },
+        { image:@image-url("icons/bus.png") },
+        { image:@image-url("icons/at.png") },
+        { image:@image-url("icons/bus.png") },
+        { image:@image-url("icons/at.png") },
+        { image:@image-url("icons/bus.png") },
+    ];
+    property <[ScoreRow]> score_rows:[
+        { name:"Alice", score: 92, status: "Good" },
+        { name:"Bob", score: 84, status: "Normal" },
+        { name:"Carol", score: 75, status: "Warning" },
+        { name:"Dave", score: 67, status: "Low" },
+        { name:"Eve", score: 100, status: "Excellent" },
+    ];
+    property <int> value: 10;
+    timer := Timer {
+        interval: 1s;
+        running: true;
+        triggered() => {
+            value -= 1;
+            if (value == 0) {
+                self.running = false;
             }
         }
+    }
+
+    Text {
+        text: value;
+        z: 100;
+        color: #770000;
+    }
+
+    for tile[i] in tile_datas: MyTile {
+        icon: tile.image;
+        x: mod(i, 4) * 74px;
+        y: floor(i / 4) * 74px;
+        width: 64px;
+        height: 64px;
+        open_curtain: tile.image_visible || tile.solved;
+        solved: tile.solved;
+        clicked => {
+            if (!root.disable_tiles) {
+                tile.image_visible = true;
+                root.check_if_pair_solved();
+            }
+        }
+    }
+    Text {
+        text: "Table Demo";
+        x: 10px;
+        y: 310px;
+        color: #202020;
+        font-size: 16px;
+    }
+
+    TableHeader {
+        x: 8px;
+        y: 342px;
+        width: 344px;
+    }
+
+    for row[i] in score_rows: TableRowItem {
+        x: 8px;
+        y: 380px + i * 32px;
+        width: 344px;
+        index: i;
+        name: row.name;
+        score: row.score;
+        status: row.status;
     }
 }
