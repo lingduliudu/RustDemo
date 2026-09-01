@@ -1,6 +1,6 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, web};
-use log::{info};
+use log::info;
 mod api;
 mod htmlparse;
 mod markdownparse;
@@ -54,13 +54,13 @@ async fn main() -> std::io::Result<()> {
     let mut port: u16 = 10000;
     if args.len() < 2 {
         // 直接退出
-        info!("参数错误: 至少需要文件名");
+        info!("参数错误,样例: watcher 文件名 端口号 是否深度监听");
         std::process::exit(0);
     }
     if args.len() >= 3 {
         port = args[2].parse::<u16>().unwrap();
     }
-    let mut is_deep =  false;
+    let mut is_deep = false;
     // 是否开启深度监听
     if args.len() == 4 {
         info!("开启深度监听");
@@ -80,7 +80,7 @@ async fn main() -> std::io::Result<()> {
     }
     let server = ChatServer::new().start();
     let final_path = full_path_to_watch.clone();
-    file_watch::run_file_watcher(full_path_to_watch, server.clone(),is_deep);
+    file_watch::run_file_watcher(full_path_to_watch, server.clone(), is_deep);
     {
         let mut data = global_cache::X.lock().unwrap();
         data.push_str(final_path.to_str().unwrap());
@@ -102,8 +102,6 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/", current_dir.as_path().to_str().unwrap()).prefer_utf8(true))
             .wrap(cors)
             .app_data(web::Data::new(server.clone()))
-
-
     })
     .bind(("127.0.0.1", port))?
     .run()

@@ -15,14 +15,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     main_window.set_tile_datas(tiles_model.clone().into());
     let main_window_weak = main_window.as_weak();
     main_window.on_check_if_pair_solved(move || {
-        let mut flipped_tiles = tiles_model
-            .iter()
-            .enumerate()
-            .filter(|(_, tile)| tile.image_visible && !tile.solved);
-
-        if let (Some((t1_idx, mut t1)), Some((t2_idx, mut t2))) =
-            (flipped_tiles.next(), flipped_tiles.next())
-        {
+        let mut flipped_tiles = tiles_model.iter().enumerate().filter(|(_, tile)| tile.image_visible && !tile.solved);
+        if let (Some((t1_idx, mut t1)), Some((t2_idx, mut t2))) = (flipped_tiles.next(), flipped_tiles.next()) {
             let is_pair_solved = t1 == t2;
             if is_pair_solved {
                 t1.solved = true;
