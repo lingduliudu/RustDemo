@@ -1,0 +1,13 @@
+[package]
+name = "douyu_watch"
+version = "1.0.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+winrt-notification = "0.5.1"
+tray-icon = "0.25.1"
+winit = "0.30"
