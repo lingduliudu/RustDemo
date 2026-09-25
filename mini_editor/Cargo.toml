@@ -1,0 +1,13 @@
+[package]
+name = "mini_editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.36.2", features = ["default"] }
+egui_extras = { version = "0.36.2", features = ["syntect"] }
+serde_json = "1.0"
+winres = "0.1"
+image = { version = "0.24", features = ["png", "ico"] }
+[build-dependencies]
+winres = "0.1"
