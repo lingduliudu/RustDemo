@@ -254,6 +254,33 @@ fn notify_live(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+// ============================================================
+// Windows 下播通知
+// ============================================================
+
+fn notify_offair(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
+    use winrt_notification::{Duration as ToastDuration, Toast};
+
+    let title = if status.nickname.is_empty() {
+        format!("斗鱼 {} 下播了", status.room_id)
+    } else {
+        format!("{} 下播了", status.nickname)
+    };
+
+    let body = if status.room_name.is_empty() {
+        format!("房间号：{}", status.room_id)
+    } else {
+        format!("{}\n房间号：{}", status.room_name, status.room_id)
+    };
+
+    Toast::new(Toast::POWERSHELL_APP_ID)
+        .title(&title)
+        .text1(&body)
+        .duration(ToastDuration::Short)
+        .show()?;
+
+    Ok(())
+}
 
 // ============================================================
 // 创建 HTTP Client
@@ -277,18 +304,13 @@ async fn check_all_rooms(
             Ok(status) => {
                 let old_live = previous.get(room_id).copied().unwrap_or(false);
 
-                /*
-                 * 只有：
-                 *
-                 * 未直播 -> 直播
-                 *
-                 * 才发送通知。
-                 *
-                 * 因此同一场直播不会重复通知。
-                 */
-
+                // 提醒开播
                 if !old_live && status.is_live {
                     let _ = notify_live(&status);
+                }
+                // 之前是开播,现在下播了提醒下以下播
+                if old_live && !status.is_live {
+                    let _ = notify_offair(&status);
                 }
 
                 previous.insert(room_id.clone(), status.is_live);
