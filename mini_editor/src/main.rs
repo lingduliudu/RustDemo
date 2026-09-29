@@ -12,55 +12,6 @@ const EDITOR_FONT_SIZE: f32 = 15.0;
 const GUTTER_RIGHT_PADDING: f32 = 3.0;
 const EDITOR_LEFT_PADDING: f32 = 0.0;
 
-fn load_icon() -> Option<egui::IconData> {
-    let decode = |bytes: &[u8]| -> Option<egui::IconData> {
-        // image crate 会自动根据文件头判断格式
-        let img = image::load_from_memory(bytes).ok()?;
-        let rgba = img.to_rgba8();
-        let (w, h) = (rgba.width(), rgba.height());
-        if w == 0 || h == 0 {
-            return None;
-        }
-        Some(egui::IconData {
-            rgba: rgba.into_raw(),
-            width: w,
-            height: h,
-        })
-    };
-    let mut candidates = Vec::new();
-
-    // 当前工作目录
-    candidates.push(PathBuf::from("assets/icon.png"));
-    candidates.push(PathBuf::from("assets/app.png"));
-    candidates.push(PathBuf::from("assets/app.ico"));
-    candidates.push(PathBuf::from("icon.png"));
-
-    // exe 所在目录
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            candidates.push(dir.join("assets/icon.png"));
-            candidates.push(dir.join("assets/app.png"));
-            candidates.push(dir.join("assets/app.ico"));
-            candidates.push(dir.join("icon.png"));
-            // exe 在 target/debug 下，assets 在项目根
-            candidates.push(dir.join("../assets/icon.png"));
-            candidates.push(dir.join("../assets/app.png"));
-            candidates.push(dir.join("../assets/app.ico"));
-            candidates.push(dir.join("../../assets/icon.png"));
-        }
-    }
-
-    for p in candidates {
-        if let Ok(bytes) = fs::read(&p) {
-            if let Some(icon) = decode(&bytes) {
-                // println!("icon loaded from {:?}", p); // 调试用
-                return Some(icon);
-            }
-        }
-    }
-    None
-}
-
 fn main() -> eframe::Result<()> {
     #[cfg(windows)]
     {
@@ -72,15 +23,26 @@ fn main() -> eframe::Result<()> {
             res.compile().unwrap();
         }
     }
-    let mut options = eframe::NativeOptions::default();
-    if let Some(icon) = load_icon() {
-        options.viewport = egui::ViewportBuilder::default()
-            .with_icon(icon)
-            .with_inner_size([900.0, 600.0]);
-    }
+
+    // 设置透明图标
+    // use std::sync::Arc;
+    use eframe::egui::{IconData, ViewportBuilder};
+    let transparent_icon = Arc::new(IconData {
+        rgba: vec![0; 4], // RGBA = 0,0,0,0
+        width: 1,
+        height: 1,
+    });
+
+    let native_options = eframe::NativeOptions {
+        viewport: ViewportBuilder::default()
+            .with_icon(transparent_icon) // 关键
+            .with_inner_size([800.0, 600.0]),
+        ..Default::default()
+    };
+
     eframe::run_native(
         "",
-        options,
+        native_options,
         Box::new(|cc| {
             let mut visuals = egui::Visuals::light();
             visuals.panel_fill = egui::Color32::from_rgb(255, 255, 255);
@@ -171,6 +133,12 @@ struct MiniEditor {
 impl MiniEditor {
     fn new(ctx: egui::Context) -> Self {
         let (code, file_path) = get_startup_file();
+        let title = if let Some(path) = &file_path {
+            format!("{}", path.display())
+        } else {
+            "".to_owned()
+        };
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
         Self {
             code,
             file_path,
@@ -183,21 +151,12 @@ impl MiniEditor {
         }
     }
 
-    fn load_from_path(&mut self, path: PathBuf) {
+    fn load_from_path(&mut self, ctx: &egui::Context, path: PathBuf) {
         if let Some(content) = try_load_file(&path) {
             self.code = content;
-            self.file_path = Some(path);
-        }
-    }
-
-    fn current_file_name(&self) -> String {
-        if let Some(p) = &self.file_path {
-            p.file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("未知文件")
-                .to_owned()
-        } else {
-            "未命名".to_owned()
+            self.file_path = Some(path.clone());
+            // 拖拽后更新标题栏
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!("{}", path.display())));
         }
     }
 
@@ -369,7 +328,7 @@ impl eframe::App for MiniEditor {
         });
 
         if let Some(dropped) = dropped {
-            self.load_from_path(dropped);
+            self.load_from_path(&ctx, dropped);
         }
 
         if ctrl_s {
