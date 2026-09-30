@@ -23,6 +23,7 @@ pub struct MiniEditor {
     search_match_index: usize,
     replace_query: String,
     replace_bar_open: bool,
+    centered_on_start: bool,
 }
 
 impl MiniEditor {
@@ -50,6 +51,7 @@ impl MiniEditor {
             search_match_index: 0,
             replace_query: String::new(),
             replace_bar_open: false,
+            centered_on_start: false,
         }
     }
 
@@ -224,6 +226,12 @@ fn draw_active_line(
 impl eframe::App for MiniEditor {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        if !self.centered_on_start {
+            if let Some(command) = egui::ViewportCommand::center_on_screen(&ctx) {
+                ctx.send_viewport_cmd(command);
+                self.centered_on_start = true;
+            }
+        }
         let editor_font = egui::FontId::new(EDITOR_FONT_SIZE, egui::FontFamily::Monospace);
 
         // 拖拽文件
