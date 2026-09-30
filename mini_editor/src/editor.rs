@@ -12,7 +12,9 @@ const EDITOR_LEFT_PADDING: f32 = 0.0;
 
 pub struct MiniEditor {
     code: String,
+    saved_code: String,
     file_path: Option<PathBuf>,
+    window_title: String,
     theme: egui_extras::syntax_highlighting::CodeTheme,
     last_content_height: f32,
     status_msg: Option<(String, f64)>, // (消息, 过期时间戳)
@@ -31,10 +33,12 @@ impl MiniEditor {
         } else {
             "".to_owned()
         };
-        ctx.send_viewport_cmd(egui::ViewportCommand::Title(title));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
         Self {
+            saved_code: code.clone(),
             code,
             file_path,
+            window_title: title,
             theme: egui_extras::syntax_highlighting::CodeTheme::from_memory(
                 &ctx,
                 &ctx.style_of(egui::Theme::Light),
@@ -52,9 +56,24 @@ impl MiniEditor {
     fn load_from_path(&mut self, ctx: &egui::Context, path: PathBuf) {
         if let Some(content) = try_load_file(&path) {
             self.code = content;
+            self.saved_code = self.code.clone();
             self.file_path = Some(path.clone());
-            // 拖拽后更新标题栏
-            ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!("{}", path.display())));
+            self.update_window_title(ctx);
+        }
+    }
+
+    fn update_window_title(&mut self, ctx: &egui::Context) {
+        let mut title = self
+            .file_path
+            .as_ref()
+            .map(|path| path.display().to_string())
+            .unwrap_or_default();
+        if self.file_path.is_some() && self.code != self.saved_code {
+            title.push_str(" *");
+        }
+        if title != self.window_title {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
+            self.window_title = title;
         }
     }
 
@@ -262,8 +281,15 @@ impl eframe::App for MiniEditor {
 
         if ctrl_s {
             if let Some(path) = &self.file_path {
-                let _ = fs::write(path, &self.code);
-                self.set_status(format!("已保存: {}", path.display()));
+                match fs::write(path, &self.code) {
+                    Ok(()) => {
+                        self.saved_code = self.code.clone();
+                        self.set_status(format!("已保存: {}", path.display()));
+                    }
+                    Err(error) => {
+                        self.set_status(format!("保存失败: {}", error));
+                    }
+                }
             } else {
                 self.set_status("未命名文件，无法保存".to_owned());
             }
@@ -588,6 +614,7 @@ impl eframe::App for MiniEditor {
                         });
                     });
             });
+        self.update_window_title(&ctx);
     }
 }
 
