@@ -475,7 +475,9 @@ impl eframe::App for MiniEditor {
                 };
 
                 egui::ScrollArea::vertical()
-                    .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
+                    .scroll_bar_visibility(
+                        egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded,
+                    )
                     .id_salt("editor_outer_scroll")
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
