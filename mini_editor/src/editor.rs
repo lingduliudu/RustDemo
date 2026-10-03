@@ -154,6 +154,47 @@ fn line_count(text: &str) -> usize {
     text.split('\n').count().max(1)
 }
 
+fn syntax_language_for_path(path: Option<&std::path::Path>) -> &'static str {
+    let Some(path) = path else {
+        return "rs";
+    };
+
+    match path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "rs" => "rs",
+        "py" => "python",
+        "js" => "js",
+        "jsx" => "js",
+        "ts" => "typescript",
+        "tsx" => "typescript",
+        "json" => "json",
+        "toml" => "toml",
+        "yaml" | "yml" => "yaml",
+        "md" => "markdown",
+        "html" | "htm" => "html",
+        "css" => "css",
+        "java" => "java",
+        "c" => "c",
+        "h" => "c",
+        "cpp" | "cc" | "cxx" => "cpp",
+        "cs" => "csharp",
+        "go" => "go",
+        "php" => "php",
+        "rb" => "ruby",
+        "swift" => "swift",
+        "lua" => "lua",
+        "sh" => "shell",
+        "bash" => "shell",
+        "sql" => "sql",
+        _ => "rs",
+    }
+}
+
 fn draw_line_numbers(
     ctx: &egui::Context,
     ui: &egui::Ui,
@@ -215,10 +256,17 @@ fn draw_active_line(
             output.galley_pos.y + row.max_y(),
         ),
     );
-    ui.painter().rect_filled(
+    let accent = egui::Color32::from_rgb(120, 119, 255);
+    ui.painter().rect_stroke(
         line_rect,
         0.0,
-        egui::Color32::from_rgba_unmultiplied(235, 243, 255, 110),
+        egui::Stroke::new(1.0, accent),
+        egui::StrokeKind::Outside,
+    );
+    ui.painter().vline(
+        line_rect.min.x + 1.0,
+        line_rect.y_range(),
+        egui::Stroke::new(2.0, accent),
     );
 }
 
@@ -547,6 +595,7 @@ impl eframe::App for MiniEditor {
                                     ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                                     let mut layouter = {
                                         let theme = self.theme.clone();
+                                        let language = syntax_language_for_path(self.file_path.as_deref());
                                         move |ui: &egui::Ui, text: &dyn egui::TextBuffer, _wrap_width: f32| {
                                             let mut job =
                                                 egui_extras::syntax_highlighting::highlight(
@@ -554,7 +603,7 @@ impl eframe::App for MiniEditor {
                                                     &ui.ctx().style_of(egui::Theme::Light),
                                                     &theme,
                                                     text.as_str(),
-                                                    "rs",
+                                                    language,
                                                 );
                                             for section in &mut job.sections {
                                                 section.format.font_id.size = EDITOR_FONT_SIZE;
