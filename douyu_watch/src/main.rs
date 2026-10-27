@@ -17,13 +17,13 @@ use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
 };
 
+use win_toast_notify::{Action, ActivationType, WinToastNotify};
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
     event_loop::{ActiveEventLoop, EventLoop},
     window::WindowId,
 };
-
 // ============================================================
 // 配置
 // ============================================================
@@ -33,6 +33,12 @@ const CHECK_INTERVAL: Duration = Duration::from_secs(10);
 const CONFIG_FILE: &str = "watch_room.txt";
 
 const DOUYU_URL: &str = "https://www.douyu.com/betard/";
+
+const DOUYU_LIVE_URL: &str = "https://www.douyu.com/";
+
+fn douyu_room_url(room_id: &str) -> String {
+    format!("{}{}", DOUYU_LIVE_URL, room_id)
+}
 
 // ============================================================
 // 斗鱼 API 数据结构
@@ -232,8 +238,6 @@ async fn fetch_room_status(
 // ============================================================
 
 fn notify_live(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
-    use winrt_notification::{Duration as ToastDuration, Toast};
-
     let title = if status.nickname.is_empty() {
         format!("斗鱼 {} 开播了", status.room_id)
     } else {
@@ -245,11 +249,17 @@ fn notify_live(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
     } else {
         format!("{}\n房间号：{}", status.room_name, status.room_id)
     };
-
-    Toast::new(Toast::POWERSHELL_APP_ID)
-        .title(&title)
-        .text1(&body)
-        .duration(ToastDuration::Short)
+    let url = format!("https://www.douyu.com/{}", status.room_id);
+    WinToastNotify::new()
+        .set_title(&title)
+        .set_messages(vec![&body])
+        .set_open(&url)
+        // .set_actions(vec![Action {
+        //     activation_type: ActivationType::Protocol, // 关键：系统直接打开 URL
+        //     action_content: "打开直播间".to_string(),
+        //     arguments: url,
+        //     image_url: None,
+        // }])
         .show()?;
 
     Ok(())
@@ -259,8 +269,6 @@ fn notify_live(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
 // ============================================================
 
 fn notify_offair(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
-    use winrt_notification::{Duration as ToastDuration, Toast};
-
     let title = if status.nickname.is_empty() {
         format!("斗鱼 {} 下播了", status.room_id)
     } else {
@@ -273,10 +281,9 @@ fn notify_offair(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
         format!("{}\n房间号：{}", status.room_name, status.room_id)
     };
 
-    Toast::new(Toast::POWERSHELL_APP_ID)
-        .title(&title)
-        .text1(&body)
-        .duration(ToastDuration::Short)
+    WinToastNotify::new()
+        .set_title(&title)
+        .set_messages(vec![&body])
         .show()?;
 
     Ok(())
