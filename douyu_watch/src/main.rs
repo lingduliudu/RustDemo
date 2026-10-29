@@ -17,7 +17,7 @@ use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
 };
 
-use win_toast_notify::{Action, ActivationType, WinToastNotify};
+use win_toast_notify::WinToastNotify;
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -33,12 +33,6 @@ const CHECK_INTERVAL: Duration = Duration::from_secs(10);
 const CONFIG_FILE: &str = "watch_room.txt";
 
 const DOUYU_URL: &str = "https://www.douyu.com/betard/";
-
-const DOUYU_LIVE_URL: &str = "https://www.douyu.com/";
-
-fn douyu_room_url(room_id: &str) -> String {
-    format!("{}{}", DOUYU_LIVE_URL, room_id)
-}
 
 // ============================================================
 // 斗鱼 API 数据结构
