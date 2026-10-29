@@ -9,6 +9,7 @@ use std::sync::Arc;
 pub(crate) const EDITOR_FONT_SIZE: f32 = 15.0;
 const GUTTER_RIGHT_PADDING: f32 = 3.0;
 const EDITOR_LEFT_PADDING: f32 = 0.0;
+const SYNTAX_HIGHLIGHT_LIMIT_BYTES: usize = 512 * 1024;
 
 pub struct MiniEditor {
     code: String,
@@ -17,6 +18,7 @@ pub struct MiniEditor {
     window_title: String,
     theme: egui_extras::syntax_highlighting::CodeTheme,
     last_content_height: f32,
+    cached_line_count: usize,
     status_msg: Option<(String, f64)>, // (消息, 过期时间戳)
     search_query: String,
     search_bar_open: bool,
@@ -34,6 +36,7 @@ impl MiniEditor {
         } else {
             "".to_owned()
         };
+        let cached_line_count = line_count(&code);
         ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
         Self {
             saved_code: code.clone(),
@@ -45,6 +48,7 @@ impl MiniEditor {
                 &ctx.style_of(egui::Theme::Light),
             ),
             last_content_height: 200.0,
+            cached_line_count,
             status_msg: None,
             search_query: String::new(),
             search_bar_open: false,
@@ -59,6 +63,7 @@ impl MiniEditor {
         if let Some(content) = try_load_file(&path) {
             self.code = content;
             self.saved_code = self.code.clone();
+            self.cached_line_count = line_count(&self.code);
             self.file_path = Some(path.clone());
             self.update_window_title(ctx);
         }
@@ -104,6 +109,7 @@ impl MiniEditor {
                 } else {
                     let old_len = self.code.len();
                     self.code = formatted;
+                    self.cached_line_count = line_count(&self.code);
                     // 重置光标到开头，避免越界
                     let id = egui::Id::new("code_editor");
                     if let Some(mut state) = egui::TextEdit::load_state(ctx, id) {
@@ -208,11 +214,20 @@ fn draw_line_numbers(
     let galley = Arc::clone(&editor_output.galley);
     let origin = editor_output.galley_pos;
     let active_row = active_editor_row(ctx, editor_output);
-    for (index, row) in galley.rows.iter().take(count).enumerate() {
-        let row_center = origin.y + row.rect().center().y;
-        if row_center < gutter_rect.min.y - 30.0 || row_center > gutter_rect.max.y + 30.0 {
-            continue;
+    let first_visible = galley
+        .rows
+        .partition_point(|row| origin.y + row.rect().center().y < gutter_rect.min.y - 30.0);
+    for (index, row) in galley
+        .rows
+        .iter()
+        .enumerate()
+        .skip(first_visible)
+        .take_while(|(_, row)| origin.y + row.rect().center().y <= gutter_rect.max.y + 30.0)
+    {
+        if index >= count {
+            break;
         }
+        let row_center = origin.y + row.rect().center().y;
         let number = (index + 1).to_string();
         let pos = egui::pos2(gutter_rect.max.x - GUTTER_RIGHT_PADDING, row_center);
         let color = if active_row == Some(index) {
@@ -370,6 +385,7 @@ impl eframe::App for MiniEditor {
                     .inner_margin(egui::Margin::ZERO),
             )
             .show(ui, |ui| {
+                let mut matches = Vec::new();
                 if self.search_bar_open {
                     let bar = egui::Frame::new()
                         .fill(egui::Color32::from_rgb(247, 248, 250))
@@ -393,7 +409,7 @@ impl eframe::App for MiniEditor {
                                     find_action = Some(1);
                                 }
 
-                                let matches = find_matches(&self.code, &self.search_query);
+                                matches = find_matches(&self.code, &self.search_query);
                                 if matches.is_empty() {
                                     self.search_match_index = 0;
                                 } else {
@@ -473,7 +489,6 @@ impl eframe::App for MiniEditor {
                                             .id(egui::Id::new("replace_input"))
                                             .hint_text("替换为"),
                                     );
-                                    let matches = find_matches(&self.code, &self.search_query);
                                     if ui
                                         .add_enabled(
                                             !matches.is_empty(),
@@ -482,19 +497,18 @@ impl eframe::App for MiniEditor {
                                         )
                                         .clicked()
                                     {
-                                        let match_index =
-                                            self.search_match_index.min(matches.len() - 1);
+                                        let match_index = self.search_match_index.min(matches.len() - 1);
                                         let (start, end) = matches[match_index];
                                         self.code.replace_range(start..end, &self.replace_query);
-                                        let remaining =
-                                            find_matches(&self.code, &self.search_query);
-                                        if remaining.is_empty() {
+                                        self.cached_line_count = line_count(&self.code);
+                                        matches = find_matches(&self.code, &self.search_query);
+                                        if matches.is_empty() {
                                             self.search_match_index = 0;
                                         } else {
                                             self.search_match_index = (match_index
-                                                + remaining.len()
+                                                + matches.len()
                                                 - 1)
-                                                % remaining.len();
+                                                % matches.len();
                                             find_action = Some(1);
                                         }
                                         ctx.memory_mut(|memory| {
@@ -513,6 +527,8 @@ impl eframe::App for MiniEditor {
                                         self.code = self
                                             .code
                                             .replace(&self.search_query, &self.replace_query);
+                                        self.cached_line_count = line_count(&self.code);
+                                        matches = find_matches(&self.code, &self.search_query);
                                         self.search_match_index = 0;
                                         find_action = Some(0);
                                         self.set_status_with_time(
@@ -533,7 +549,9 @@ impl eframe::App for MiniEditor {
                     );
                 }
 
-                let matches = find_matches(&self.code, &self.search_query);
+                if !self.search_bar_open {
+                    matches.clear();
+                }
                 if matches.is_empty() {
                     self.search_match_index = 0;
                 } else {
@@ -564,7 +582,7 @@ impl eframe::App for MiniEditor {
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                        let count = line_count(&self.code);
+                        let count = self.cached_line_count;
                         let max_digits = count.to_string().len().max(2);
                         // 0.36 获取字体宽度方式
                         let char_width = ui.fonts_mut(|fonts| fonts.glyph_width(&editor_font, '0'));
@@ -593,35 +611,106 @@ impl eframe::App for MiniEditor {
                                 .inner_margin(egui::Margin::symmetric(EDITOR_LEFT_PADDING as i8, 0))
                                 .show(ui, |ui| {
                                     ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+                                    let highlight_syntax =
+                                        self.code.len() <= SYNTAX_HIGHLIGHT_LIMIT_BYTES;
                                     let mut layouter = {
                                         let theme = self.theme.clone();
                                         let language = syntax_language_for_path(self.file_path.as_deref());
                                         move |ui: &egui::Ui, text: &dyn egui::TextBuffer, _wrap_width: f32| {
-                                            let mut job =
+                                            let mut job = if highlight_syntax {
                                                 egui_extras::syntax_highlighting::highlight(
                                                     ui.ctx(),
                                                     &ui.ctx().style_of(egui::Theme::Light),
                                                     &theme,
                                                     text.as_str(),
                                                     language,
+                                                )
+                                            } else {
+                                                let mut job = egui::text::LayoutJob::default();
+                                                job.append(
+                                                    text.as_str(),
+                                                    0.0,
+                                                    egui::TextFormat {
+                                                        font_id: egui::FontId::new(
+                                                            EDITOR_FONT_SIZE,
+                                                            egui::FontFamily::Monospace,
+                                                        ),
+                                                        color: ui.visuals().text_color(),
+                                                        ..Default::default()
+                                                    },
                                                 );
+                                                job
+                                            };
                                             for section in &mut job.sections {
                                                 section.format.font_id.size = EDITOR_FONT_SIZE;
                                             }
                                             job.wrap.max_width = f32::INFINITY;
                                             job.wrap.break_anywhere = false;
+                                            job.keep_trailing_whitespace = true;
                                             ui.fonts_mut(|fonts| fonts.layout_job(job))
                                         }
                                     };
-                                    let output = egui::TextEdit::multiline(&mut self.code)
-                                        .id(egui::Id::new("code_editor"))
-                                        .font(egui::TextStyle::Monospace)
-                                        .code_editor()
-                                        .desired_width(f32::INFINITY)
-                                        .frame(egui::Frame::NONE)
-                                        .lock_focus(true)
-                                        .layouter(&mut layouter)
-                                        .show(ui);
+                                    let scroll_output = egui::ScrollArea::horizontal()
+                                        .id_salt("editor_horizontal_scroll")
+                                        .scroll_bar_visibility(
+                                            egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded,
+                                        )
+                                        .show(ui, |ui| {
+                                            let output = egui::TextEdit::multiline(&mut self.code)
+                                                .id(egui::Id::new("code_editor"))
+                                                .font(egui::TextStyle::Monospace)
+                                                .code_editor()
+                                                .desired_width(f32::INFINITY)
+                                                .frame(egui::Frame::NONE)
+                                                .lock_focus(true)
+                                                .layouter(&mut layouter)
+                                                .show(ui);
+                                            if output.response.changed() {
+                                                self.cached_line_count =
+                                                    output.galley.rows.len().max(1);
+                                            }
+                                            let content_width = output.galley.intrinsic_size().x;
+                                            let viewport_width = output.text_clip_rect.width();
+                                            if content_width > viewport_width + 1.0 {
+                                                ui.set_min_width(content_width);
+                                            }
+                                            output
+                                        });
+                                    let output = scroll_output.inner;
+                                    if output.response.dragged_by(egui::PointerButton::Primary) {
+                                        let pointer_pos =
+                                            ctx.input(|input| input.pointer.interact_pos());
+                                        if let Some(pointer_pos) = pointer_pos {
+                                            let edge_width = 24.0;
+                                            let direction = if pointer_pos.x
+                                                >= scroll_output.inner_rect.right() - edge_width
+                                            {
+                                                1.0
+                                            } else if pointer_pos.x
+                                                <= scroll_output.inner_rect.left() + edge_width
+                                            {
+                                                -1.0
+                                            } else {
+                                                0.0
+                                            };
+                                            if direction != 0.0 {
+                                                let max_offset = (scroll_output.content_size.x
+                                                    - scroll_output.inner_rect.width())
+                                                .max(0.0);
+                                                let step = (ctx.input(|input| input.stable_dt)
+                                                    * 720.0)
+                                                    .clamp(8.0, 36.0);
+                                                let mut state = scroll_output.state;
+                                                let previous_offset = state.offset.x;
+                                                state.offset.x = (state.offset.x + direction * step)
+                                                    .clamp(0.0, max_offset);
+                                                if state.offset.x != previous_offset {
+                                                    state.store(&ctx, scroll_output.id);
+                                                    ctx.request_repaint();
+                                                }
+                                            }
+                                        }
+                                    }
                                     editor_output_opt = Some(output);
                                 });
 
@@ -650,7 +739,9 @@ impl eframe::App for MiniEditor {
                                             CCursor::new(end_char),
                                         )));
                                         state.store(&ctx, editor_id);
-                                        output.response.request_focus();
+                                        if find_action != Some(0) {
+                                            output.response.request_focus();
+                                        }
                                         if let Some(row) = output
                                             .galley
                                             .rows
@@ -666,6 +757,7 @@ impl eframe::App for MiniEditor {
                                 }
                                 if ctrl_d {
                                     delete_current_line(&ctx, &mut self.code, output);
+                                    self.cached_line_count = line_count(&self.code);
                                 }
                             }
                         });
