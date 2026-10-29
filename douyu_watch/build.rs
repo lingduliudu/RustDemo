@@ -1,7 +1,7 @@
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-
+// 多文件冲突测试
 fn main() {
     println!("cargo:rerun-if-changed=watch_room.txt");
 
