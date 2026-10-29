@@ -272,7 +272,7 @@ fn notify_offair(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
     let title = if status.nickname.is_empty() {
         format!("斗鱼 {} 下播了", status.room_id)
     } else {
-        format!("{} 下播了", status.nickname)
+        format!("{} 下播了吗", status.nickname)
     };
 
     let body = if status.room_name.is_empty() {
