@@ -241,7 +241,6 @@ fn notify_live(status: &RoomStatus) -> Result<(), Box<dyn Error>> {
     let title = if status.nickname.is_empty() {
         format!("斗鱼 {} 开播了", status.room_id)
     } else {
-        format!("{} 开播了", status.nickname)
     };
 
     let body = if status.room_name.is_empty() {
