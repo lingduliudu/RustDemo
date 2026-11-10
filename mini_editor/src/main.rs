@@ -32,9 +32,9 @@ fn main() -> eframe::Result<()> {
         viewport: ViewportBuilder::default()
             .with_icon(transparent_icon) // 关键
             .with_inner_size([800.0, 600.0]),
+        renderer: eframe::Renderer::Glow,
         ..Default::default()
     };
-
     eframe::run_native(
         "",
         native_options,

@@ -1,0 +1,15 @@
+[package]
+name = "open_current"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "open"
+path = "src/main.rs"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+
+[dependencies]
