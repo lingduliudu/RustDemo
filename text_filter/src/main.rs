@@ -57,7 +57,7 @@ fn main() -> anyhow::Result<()> {
 
     // 初始显示全部
     app.set_results(to_model(&all));
-    app.set_status(format!("共 {} 条，来自 data/*.txt", all.len()).into());
+    app.set_status(format!("共 {} 条", all.len()).into());
     app.set_toast("".into());
 
     // 搜索：关键词为空 = 全部；否则 code 或 desc 包含关键词（忽略大小写）
