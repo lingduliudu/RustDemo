@@ -1,0 +1,21 @@
+[package]
+name = "auto_click"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+slint = "1.10"
+enigo = "0.4"
+tokio = { version = "1", features = ["full"] }
+once_cell = "1.19"
+anyhow = "1.0"
+windows = { version = "0.58", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
+
+[build-dependencies]
+slint-build = "1.10"
+
+# Windows GUI 程序必备: release 打包时不带控制台
+[profile.release]
+panic = "abort"
+strip = true
+opt-level = 2

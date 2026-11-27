@@ -1,0 +1,40 @@
+import { Button, HorizontalBox, VerticalBox, LineEdit } from "std-widgets.slint";
+
+export component App inherits Window {
+    title: "连点器";
+    width: 320px;
+    height: 340px;
+    background: #1a1a1e;
+    in-out property <bool> running: false;
+    in-out property <[string]> keys: ["a", "s", "d"];
+    in-out property <string> status: "已停止";
+    callback toggle-running();
+    callback update-key(int, string);
+    VerticalBox {
+        padding: 20px;
+        spacing: 14px;
+        alignment: start;
+        Text { text: "连点器"; font-size: 24px; font-weight: 800; color: white; }
+        Text { text: "开始后, 按住哪个键就 200ms 连点哪个, 松手即停"; font-size: 12px; color: #9a9aa5; wrap: word-wrap; }
+        for i in 3 : HorizontalBox {
+            spacing: 10px;
+            Text { text: "按键 " + (i + 1) + ":"; color: white; vertical-alignment: center; }
+            LineEdit {
+                text: root.keys[i];
+                placeholder-text: "只填 a / s / d / f";
+                edited => { root.update-key(i, self.text); }
+            }
+        }
+        Button {
+            text: root.running ? "停止" : "开始";
+            primary: true;
+            clicked => { root.toggle-running(); }
+        }
+        Text {
+            text: "状态: " + root.status;
+            color: root.running ? #4ade80 : #f87171;
+            font-weight: 700;
+            wrap: word-wrap;
+        }
+    }
+}
