@@ -1,0 +1,72 @@
+import { Button, LineEdit, VerticalBox, HorizontalBox, ListView } from "std-widgets.slint";
+
+export struct RowData {
+    code: string,
+    desc: string,
+}
+
+export component App inherits Window {
+    title: "Code 搜索";
+    min-width: 560px;
+    min-height: 380px;
+
+    in property <[RowData]> results;
+    in property <string> status;
+    in property <string> toast;
+    callback search(string);
+    callback copy-code(string);
+
+    VerticalBox {
+        spacing: 10px;
+        padding: 16px;
+
+        HorizontalBox {
+            spacing: 8px;
+            kw := LineEdit {
+                placeholder-text: "输入关键词，支持 code / 说明模糊搜索，回车也可搜索";
+                horizontal-stretch: 1;
+                accepted => { root.search(self.text); }
+            }
+            Button {
+                text: "搜索";
+                primary: true;
+                clicked => { root.search(kw.text); }
+            }
+        }
+
+        Text { text: root.status; color: #666; font-size: 12px; }
+
+        HorizontalBox {
+            Rectangle { background: #f0f0f0; height: 32px; width: 180px;
+                Text { text: "Code"; vertical-alignment: center; x: 8px; font-weight: 700; } }
+            Rectangle { background: #f0f0f0; height: 32px; horizontal-stretch: 1;
+                Text { text: "说明"; vertical-alignment: center; x: 8px; font-weight: 700; } }
+        }
+
+        Rectangle {
+            border-color: #ddd; border-width: 1px; clip: true;
+            list := ListView {
+                width: 100%; height: 100%;
+                for r in root.results : Rectangle {
+                    height: 34px; width: 100%;
+                    background: ta.has-hover ? #eef6ff : white;
+                    HorizontalBox {
+                        padding-left: 8px;
+                        Text { text: r.code; width: 172px; vertical-alignment: center; font-weight: 600; overflow: elide; }
+                        Text { text: r.desc; horizontal-stretch: 1; vertical-alignment: center; overflow: elide; }
+                    }
+                    ta := TouchArea {
+                        width: 100%; height: 100%;
+                        double-clicked => { root.copy-code(r.code); }
+                    }
+                }
+            }
+        }
+
+        Text { text: root.toast; color: #0a7a42; font-size: 12px; height: 18px; }
+        Text {
+            text: "提示：双击任意行，复制该行第一列 Code 到剪贴板。数据来自 data/*.txt，每行格式：CODE 说明...（空格分隔）";
+            color: #999; font-size: 11px; wrap: word-wrap;
+        }
+    }
+}
