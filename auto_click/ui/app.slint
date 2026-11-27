@@ -3,7 +3,7 @@ import { Button, HorizontalBox, VerticalBox, LineEdit } from "std-widgets.slint"
 export component App inherits Window {
     title: "连点器";
     width: 320px;
-    height: 340px;
+    height: 330px;
     background: #1a1a1e;
     in-out property <bool> running: false;
     in-out property <[string]> keys: ["a", "s", "d"];
@@ -12,10 +12,9 @@ export component App inherits Window {
     callback update-key(int, string);
     VerticalBox {
         padding: 20px;
-        spacing: 14px;
+        spacing: 13px;
         alignment: start;
-        Text { text: "连点器"; font-size: 24px; font-weight: 800; color: white; }
-        Text { text: "开始后, 按住哪个键就 200ms 连点哪个, 松手即停"; font-size: 12px; color: #9a9aa5; wrap: word-wrap; }
+        Text { text: "连点器"; font-size: 15px; font-weight: 500; color: white; }
         for i in 3 : HorizontalBox {
             spacing: 10px;
             Text { text: "按键 " + (i + 1) + ":"; color: white; vertical-alignment: center; }
