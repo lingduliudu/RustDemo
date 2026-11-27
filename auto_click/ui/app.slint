@@ -2,11 +2,12 @@ import { Button, HorizontalBox, VerticalBox, LineEdit } from "std-widgets.slint"
 
 export component App inherits Window {
     title: "连点器";
+    icon: @image-url("../app.ico");
     width: 320px;
     height: 330px;
     background: #1a1a1e;
     in-out property <bool> running: false;
-    in-out property <[string]> keys: ["a", "s", "d","z","x"];
+    in-out property <[string]> keys: ["a", "s", "d"];
     in-out property <string> status: "已停止";
     callback toggle-running();
     callback update-key(int, string);
@@ -20,7 +21,7 @@ export component App inherits Window {
             Text { text: "按键 " + (i + 1) + ":"; color: white; vertical-alignment: center; }
             LineEdit {
                 text: root.keys[i];
-                placeholder-text: "只填 a / s / d /z /x";
+                placeholder-text: "仅支持 a / s / d / z / x";
                 edited => { root.update-key(i, self.text); }
             }
         }

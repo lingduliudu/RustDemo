@@ -24,7 +24,7 @@ fn vk_of(c: char) -> u16 {
     }
 }
 struct HookState {
-    keys: Arc<Mutex<Vec<char>>>,
+    keys: Arc<Mutex<Vec<Option<char>>>>,
     held: Arc<Mutex<HashMap<char, bool>>>,
 }
 static HOOK_STATE: OnceLock<Arc<HookState>> = OnceLock::new();
@@ -44,7 +44,7 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
                 _ => None,
             } {
                 if let Some(state) = HOOK_STATE.get() {
-                    if state.keys.lock().unwrap().contains(&c) {
+                    if state.keys.lock().unwrap().contains(&Some(c)) {
                         let mut held = state.held.lock().unwrap();
                         match wparam.0 as u32 {
                             WM_KEYDOWN | WM_SYSKEYDOWN => {
@@ -92,7 +92,11 @@ fn send_click(c: char) {
 }
 fn main() -> Result<(), slint::PlatformError> {
     let ui = App::new()?;
-    let keys = Arc::new(Mutex::new(vec!['a', 's', 'd', 'z', 'x']));
+    let keys = Arc::new(Mutex::new(vec![
+        Some('a'),
+        Some('s'),
+        Some('d'),
+    ]));
     let held: Arc<Mutex<HashMap<char, bool>>> = Arc::new(Mutex::new(HashMap::new()));
     let running = Arc::new(AtomicBool::new(false));
     HOOK_STATE
@@ -115,12 +119,11 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.on_update_key(move |idx, text| {
         let mut g = keys2.lock().unwrap();
         if let Some(k) = g.get_mut(idx as usize) {
-            if let Some(c) = text.chars().next() {
-                let c = c.to_ascii_lowercase();
-                if matches!(c, 'a' | 's' | 'd' | 'z' | 'x') {
-                    *k = c;
-                }
-            }
+            let normalized = text.trim().to_ascii_lowercase();
+            *k = match normalized.as_str() {
+                "a" | "s" | "d" | "z" | "x" => normalized.chars().next(),
+                _ => None,
+            };
         }
     });
     let running2 = running.clone();
@@ -137,7 +140,7 @@ fn main() -> Result<(), slint::PlatformError> {
         }
         running2.store(true, Ordering::SeqCst);
         ui.set_running(true);
-        ui.set_status("监听中: 按住 a/s/d/f 即连点".into());
+        ui.set_status("监听中: 按住输入框中的按键即连点".into());
         let r = running2.clone();
         let k = keys3.clone();
         let h = held2.clone();
@@ -146,7 +149,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let mut prev_held: HashMap<char, bool> = HashMap::new();
             while r.load(Ordering::SeqCst) {
                 let snapshot = k.lock().unwrap().clone();
-                for key in snapshot {
+                for key in snapshot.into_iter().flatten() {
                     // 抬起判定: 直接读钩子记的真实状态, 没有 600ms 桥接, 抬起后不再多点
                     let is_held = h.lock().unwrap().get(&key).copied().unwrap_or(false);
                     if !is_held {
