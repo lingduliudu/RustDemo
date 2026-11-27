@@ -11,13 +11,15 @@ use std::time::{Duration, Instant};
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
-const INTERVAL_MS: u64 = 200;
+const INTERVAL_MS: u64 = 100;
 fn vk_of(c: char) -> u16 {
     match c {
         'a' | 'A' => 0x41,
         's' | 'S' => 0x53,
         'd' | 'D' => 0x44,
         'f' | 'F' => 0x46,
+        'x' | 'X' => 0x58,
+        'z' | 'Z' => 0x5A,
         _ => 0,
     }
 }
@@ -37,6 +39,8 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
                 0x53 => Some('s'),
                 0x44 => Some('d'),
                 0x46 => Some('f'),
+                0x5A => Some('z'),
+                0x58 => Some('x'),
                 _ => None,
             } {
                 if let Some(state) = HOOK_STATE.get() {
@@ -88,7 +92,7 @@ fn send_click(c: char) {
 }
 fn main() -> Result<(), slint::PlatformError> {
     let ui = App::new()?;
-    let keys = Arc::new(Mutex::new(vec!['a', 's', 'd']));
+    let keys = Arc::new(Mutex::new(vec!['a', 's', 'd', 'z', 'x']));
     let held: Arc<Mutex<HashMap<char, bool>>> = Arc::new(Mutex::new(HashMap::new()));
     let running = Arc::new(AtomicBool::new(false));
     HOOK_STATE
@@ -113,7 +117,7 @@ fn main() -> Result<(), slint::PlatformError> {
         if let Some(k) = g.get_mut(idx as usize) {
             if let Some(c) = text.chars().next() {
                 let c = c.to_ascii_lowercase();
-                if matches!(c, 'a' | 's' | 'd' | 'f') {
+                if matches!(c, 'a' | 's' | 'd' | 'z' | 'x') {
                     *k = c;
                 }
             }
